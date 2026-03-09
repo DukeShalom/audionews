@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioNEWS - AI-Powered News Aggregator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #060A12;
+            --bg-secondary: #0D1117;
+            --accent-red: #E8192C;
+            --accent-cyan: #00D4FF;
+            --green-safe: #22C55E;
+            --yellow-warn: #F59E0B;
+            --text-primary: #FFFFFF;
+            --text-secondary: #94A3B8;
+            --text-muted: #475569;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* SPLASH SCREEN */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #060A12 0%, #0a1628 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.8s ease;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-content {
+            text-align: center;
+        }
+
+        .splash-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 30px;
+            font-family: 'Bebas Neue', serif;
+            font-size: 56px;
+            letter-spacing: 3px;
+        }
+
+        .splash-logo .audio {
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+
+        .splash-logo .news {
+            color: var(--accent-red);
+            font-weight: bold;
+        }
+
+        .waveform-animated {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            height: 80px;
+            margin: 40px 0;
+        }
+
+        .waveform-bar {
+            width: 4px;
+            background: var(--accent-red);
+            border-radius: 2px;
+            animation: wave 0.8s ease-in-out infinite;
+        }
+
+        .waveform-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
+        .waveform-bar:nth-child(2) { animation-delay: 0.1s; height: 35px; }
+        .waveform-bar:nth-child(3) { animation-delay: 0.2s; height: 50px; }
+        .waveform-bar:nth-child(4) { animation-delay: 0.3s; height: 65px; }
+        .waveform-bar:nth-child(5) { animation-delay: 0.4s; height: 75px; }
+        .waveform-bar:nth-child(6) { animation-delay: 0.3s; height: 65px; }
+        .waveform-bar:nth-child(7) { animation-delay: 0.2s; height: 50px; }
+        .waveform-bar:nth-child(8) { animation-delay: 0.1s; height: 35px; }
+        .waveform-bar:nth-child(9) { animation-delay: 0s; height: 20px; }
+
+        @keyframes wave {
+            0%, 100% { height: 20px; }
+            50% { height: 70px; }
+        }
+
+        .splash-tagline {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin: 30px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, var(--accent-red) 0%, #c2142a 100%);
+            color: var(--text-primary);
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(232, 25, 44, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(232, 25, 44, 0.5);
+        }
+
+        .cta-button:active {
+            transform: translateY(0);
+        }
+
+        .trust-badges {
+            display: flex;
+            gap: 16px;
+            margin-top: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(232, 25, 44, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* CATEGORY SELECTION */
+        .onboarding-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding: 40px 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .onboarding-screen.active {
+            display: flex;
+        }
+
+        .onboarding-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .onboarding-header h1 {
+            font-family: 'Bebas Neue', serif;
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .onboarding-header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .category-card {
+            background: var(--bg-secondary);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card:hover {
+            border-color: var(--accent-red);
+            background: rgba(232, 25, 44, 0.05);
+        }
+
+        .category-card.selected {
+            border-color: var(--accent-red);
+            background: rgba(232, 25, 44, 0.1);
+        }
+
+        .category-card .checkmark {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+        }
+
+        .category-card.selected .checkmark {
+            display: flex;
+        }
+
+        .category-emoji {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .category-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .category-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .onboarding-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: auto;
+        }
+
+        /* MAIN PLAYER */
+        .player-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        .player-screen.active {
+            display: flex;
+        }
+
+        .player-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .player-logo {
+            font-family: 'Bebas Neue', serif;
+            font-size: 18px;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .player-top-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-red);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .settings-icon {
+            cursor: pointer;
+            font-size: 20px;
+            transition: transform 0.2s;
+        }
+
+        .settings-icon:hover {
+            transform: rotate(20deg);
+        }
+
+        .now-playing-card {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--accent-red);
+            margin: 20px;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(232, 25, 44, 0.1);
+        }
+
+        .source-badge {
+            display: inline-block;
+            background: rgba(232, 25, 44, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .category-pill {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-cyan);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .headline {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 16px 0;
+            line-height: 1.3;
+        }
+
+        .summary-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 16px 0;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .summary-text .current-sentence {
+            color: var(--text-primary);
+            background: rgba(232, 25, 44, 0.2);
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
+        .story-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            align-items: center;
+        }
+
+        .verified-badge {
+            color: var(--green-safe);
+            font-weight: 600;
+        }
+
+        .audio-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin: 30px 20px 20px;
+        }
+
+        .control-button {
+            background: rgba(232, 25, 44, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+
+        .control-button:hover {
+            background: rgba(232, 25, 44, 0.2);
+        }
+
+        .play-pause-button {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-red) 0%, #c2142a 100%);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(232, 25, 44, 0.4);
+        }
+
+        .play-pause-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 28px rgba(232, 25, 44, 0.6);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 2px;
+            margin: 16px 20px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-red);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .story-counter {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 8px 0;
+        }
+
+        .playback-options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px;
+            padding: 16px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .option-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-select {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--accent-cyan);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .speed-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .speed-btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .speed-btn.active {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .speed-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .toggle-switch {
+            width: 36px;
+            height: 20px;
+            background: var(--text-muted);
+            border-radius: 10px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-cyan);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 18px;
+        }
+
+        .broadcast-queue {
+            padding: 20px;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .queue-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .queue-list {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            scroll-behavior: smooth;
+        }
+
+        .queue-story {
+            flex-shrink: 0;
+            width: 140px;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(232, 25, 44, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .queue-story:hover {
+            border-color: var(--accent-red);
+            background: rgba(232, 25, 44, 0.05);
+        }
+
+        .queue-story.playing {
+            border-color: var(--accent-red);
+            background: rgba(232, 25, 44, 0.1);
+        }
+
+        .queue-source {
+            color: var(--accent-red);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .queue-headline {
+            color: var(--text-secondary);
+            line-height: 1.3;
+            margin-bottom: 6px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .queue-duration {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        /* BROWSE PAGE */
+        .browse-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 100px;
+        }
+
+        .browse-screen.active {
+            display: flex;
+        }
+
+        .search-bar {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-red);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .category-filter {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            overflow-x: auto;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            scroll-behavior: smooth;
+        }
+
+        .filter-tag {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .filter-tag.active {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .filter-tag:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .feed-container {
+            padding: 0 20px 20px;
+        }
+
+        .story-card {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .story-card:hover {
+            border-color: var(--accent-red);
+            background: rgba(232, 25, 44, 0.05);
+        }
+
+        .story-card.breaking::before {
+            content: 'BREAKING';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--accent-red);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .story-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .story-source {
+            font-weight: 600;
+            color: var(--accent-red);
+            font-size: 12px;
+        }
+
+        .story-time {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .story-category {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-cyan);
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: auto;
+        }
+
+        .story-headline {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .story-teaser {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+        }
+
+        .story-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .story-duration {
+            color: var(--accent-cyan);
+        }
+
+        .story-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            transition: color 0.2s;
+            padding: 4px 8px;
+        }
+
+        .icon-button:hover {
+            color: var(--accent-red);
+        }
+
+        .icon-button.saved {
+            color: var(--accent-red);
+        }
+
+        /* SAVED STORIES PAGE */
+        .saved-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .saved-screen.active {
+            display: flex;
+        }
+
+        .saved-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .saved-header h1 {
+            font-family: 'Bebas Neue', serif;
+            font-size: 32px;
+        }
+
+        .clear-button {
+            background: rgba(232, 25, 44, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-button:hover {
+            background: rgba(232, 25, 44, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-emoji {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* SETTINGS PAGE */
+        .settings-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .settings-screen.active {
+            display: flex;
+        }
+
+        .settings-section {
+            margin-bottom: 32px;
+        }
+
+        .settings-section h2 {
+            font-family: 'Bebas Neue', serif;
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--accent-red);
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .settings-item-label {
+            font-weight: 500;
+        }
+
+        .settings-item-value {
+            color: var(--accent-cyan);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .source-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .source-toggle.active {
+            border-color: var(--accent-red);
+            background: rgba(232, 25, 44, 0.1);
+        }
+
+        .source-toggle:hover {
+            border-color: var(--accent-red);
+        }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 70px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: var(--accent-red);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        /* BREAKING BANNER */
+        .breaking-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(90deg, var(--accent-red) 0%, #c2142a 100%);
+            color: white;
+            padding: 12px 20px;
+            z-index: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(232, 25, 44, 0.3);
+        }
+
+        .breaking-banner.show {
+            transform: translateY(0);
+        }
+
+        .breaking-text {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .breaking-close {
+            cursor: pointer;
+            font-size: 20px;
+            color: white;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 640px) {
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .headline {
+                font-size: 22px;
+            }
+
+            .splash-logo {
+                font-size: 40px;
+            }
+
+            .playback-options {
+                flex-direction: column;
+            }
+
+            .story-card.breaking::before {
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+        }
+
+        /* ANIMATIONS */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .story-card {
+            animation: slideIn 0.3s ease;
+        }
+
+        .queue-story {
+            animation: slideIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- BREAKING NEWS BANNER -->
+        <div class="breaking-banner" id="breakingBanner">
+            <span class="breaking-text" id="breakingText"></span>
+            <span class="breaking-close" onclick="dismissBreaking()">✕</span>
+        </div>
+
+        <!-- SPLASH SCREEN -->
+        <div class="splash-screen" id="splashScreen">
+            <div class="splash-content">
+                <div class="splash-logo">
+                    <span class="audio">AUDIO</span>
+                    <span class="news">NEWS</span>
+                </div>
+                <div class="waveform-animated">
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                </div>
+                <p class="splash-tagline">The world's news. Spoken to you. Right now.</p>
+                <button class="cta-button" onclick="startListening()">Start Listening →</button>
+                <div class="trust-badges">
+                    <div class="badge">BBC</div>
+                    <div class="badge">CNN</div>
+                    <div class="badge">Reuters</div>
+                    <div class="badge">Al Jazeera</div>
+                    <div class="badge">Fox News</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ONBOARDING SCREEN -->
+        <div class="onboarding-screen" id="onboardingScreen">
+            <div class="onboarding-header">
+                <h1>What do you want to hear about?</h1>
+                <p>Choose your categories. We'll build your broadcast.</p>
+            </div>
+
+            <div class="categories-grid" id="categoriesGrid"></div>
+
+            <div class="onboarding-actions">
+                <button class="cta-button" onclick="completeOnboarding()" id="buildBroadcastBtn">Build My Broadcast →</button>
+            </div>
+        </div>
+
+        <!-- PLAYER SCREEN -->
+        <div class="player-screen" id="playerScreen">
+            <div class="player-top-bar">
+                <div class="player-logo">AUDIO NEWS</div>
+                <div class="player-top-right">
+                    <div class="live-indicator">
+                        <span class="live-dot"></span>
+                        LIVE
+                    </div>
+                    <span class="settings-icon" onclick="switchScreen('settings')">⚙️</span>
+                </div>
+            </div>
+
+            <div class="now-playing-card" id="nowPlayingCard">
+                <div class="source-badge" id="sourceBadge">BBC World Service</div>
+                <span class="category-pill" id="categoryPill">📰 World News</span>
+                <h2 class="headline" id="headline">Loading story...</h2>
+                <div class="summary-text" id="summaryText">Loading summary...</div>
+                <div class="story-meta">
+                    <span id="timestamp">2 hours ago</span>
+                    <span class="verified-badge">✓ Verified Source</span>
+                </div>
+            </div>
+
+            <div class="audio-controls">
+                <button class="control-button" title="Replay 10s">↻ 10s</button>
+                <button class="control-button" onclick="previousStory()" title="Previous">⏮</button>
+                <button class="play-pause-button" id="playPauseBtn" onclick="togglePlayPause()" title="Play/Pause">▶</button>
+                <button class="control-button" onclick="nextStory()" title="Next">⏭</button>
+                <button class="control-button" title="Skip 10s">10s ⇨</button>
+            </div>
+
+            <div class="progress-bar" id="progressBar" onclick="seekAudio(event)">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="story-counter" id="storyCounter">Story 1 of 10</div>
+
+            <div class="playback-options">
+                <div class="option-group">
+                    <span>Voice:</span>
+                    <select class="option-select" id="voiceSelect" onchange="changeVoice()">
+                        <option value="default">Default</option>
+                        <option value="alto">Alto</option>
+                        <option value="bass">Bass</option>
+                    </select>
+                </div>
+
+                <div class="option-group">
+                    <span>Speed:</span>
+                    <div class="speed-buttons">
+                        <button class="speed-btn" onclick="setSpeed(0.75)">0.75x</button>
+                        <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
+                        <button class="speed-btn" onclick="setSpeed(1.25)">1.25x</button>
+                        <button class="speed-btn" onclick="setSpeed(1.5)">1.5x</button>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <span>Loop:</span>
+                    <div class="toggle-switch" id="loopToggle" onclick="toggleLoop()"></div>
+                </div>
+
+                <div class="option-group">
+                    <span>Save:</span>
+                    <button class="control-button" onclick="saveCurrentStory()" title="Save Story">⭐</button>
+                </div>
+            </div>
+
+            <div class="broadcast-queue">
+                <div class="queue-title">UPCOMING</div>
+                <div class="queue-list" id="queueList"></div>
+            </div>
+        </div>
+
+        <!-- BROWSE SCREEN -->
+        <div class="browse-screen" id="browseScreen">
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search any topic, person, or event...">
+            </div>
+
+            <div class="category-filter" id="categoryFilter"></div>
+
+            <div class="feed-container" id="feedContainer"></div>
+        </div>
+
+        <!-- SAVED STORIES SCREEN -->
+        <div class="saved-screen" id="savedScreen">
+            <div class="saved-header">
+                <h1>Saved Stories</h1>
+                <button class="clear-button" onclick="clearAllSaved()">Clear All</button>
+            </div>
+            <div id="savedStoriesContainer"></div>
+        </div>
+
+        <!-- SETTINGS SCREEN -->
+        <div class="settings-screen" id="settingsScreen">
+            <h1 style="font-family: 'Bebas Neue', serif; font-size: 32px; margin-bottom: 24px;">Settings</h1>
+
+            <div class="settings-section">
+                <h2>Your Preferences</h2>
+                <button class="cta-button" onclick="editCategories()" style="width: 100%;">Edit Categories</button>
+            </div>
+
+            <div class="settings-section">
+                <h2>Playback</h2>
+                <div class="settings-item">
+                    <span class="settings-item-label">Default Voice</span>
+                    <select class="option-select" id="settingsVoiceSelect" onchange="saveDefaultVoice()">
+                        <option value="default">Default</option>
+                        <option value="alto">Alto</option>
+                        <option value="bass">Bass</option>
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-item-label">Default Speed</span>
+                    <select class="option-select" id="settingsSpeedSelect" onchange="saveDefaultSpeed()">
+                        <option value="0.75">0.75x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Sources</h2>
+                <div class="source-grid" id="sourceGrid"></div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Other</h2>
+                <div class="settings-item">
+                    <span class="settings-item-label">Breaking News Alerts</span>
+                    <div class="toggle-switch active" id="alertToggle" onclick="toggleAlerts()"></div>
+                </div>
+                <div class="settings-item">
+                    <span class="settings-item-label">Dark Mode</span>
+                    <div class="toggle-switch active" id="darkToggle" onclick="toggleDarkMode()"></div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <button class="cta-button" onclick="clearAllSaved()" style="width: 100%; background: rgba(232, 25, 44, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red);">Clear All Saved Stories</button>
+            </div>
+
+            <div class="settings-section">
+                <h2>About</h2>
+                <p style="color: var(--text-secondary); font-size: 12px; line-height: 1.6;">
+                    AudioNEWS — AI-Powered News Aggregator<br>
+                    Real headlines from trusted global sources<br>
+                    Summarized with AI, read aloud beautifully<br>
+                    Built for people too smart to stay uninformed
+                </p>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchScreen('player')">
+                <div class="nav-icon">▶</div>
+                <span>Player</span>
+            </div>
+            <div class="nav-item" onclick="switchScreen('browse')">
+                <div class="nav-icon">📰</div>
+                <span>Browse</span>
+            </div>
+            <div class="nav-item" onclick="switchScreen('saved')">
+                <div class="nav-icon">⭐</div>
+                <span>Saved</span>
+            </div>
+            <div class="nav-item" onclick="switchScreen('settings')">
+                <div class="nav-icon">⚙️</div>
+                <span>Settings</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE MANAGEMENT =====
+        const state = {
+            currentStoryIndex: 0,
+            stories: [],
+            filteredStories: [],
+            isPlaying: false,
+            currentPlaybackRate: 1,
+            selectedCategories: [],
+            selectedSources: ['BBC', 'CNN', 'Reuters', 'Al Jazeera', 'Fox News', 'AP News', 'The Guardian'],
+            savedStories: [],
+            currentVoice: 'default',
+            listeningStreak: 0,
+            lastListenDate: null,
+            breakingNewsAlerts: true,
+            darkMode: true
+        };
+
+        const categories = [
+            { name: 'World News', emoji: '🌍', desc: 'Global headlines and international affairs' },
+            { name: 'Politics', emoji: '🏛️', desc: 'Government, elections, and policy' },
+            { name: 'Business & Finance', emoji: '💼', desc: 'Markets, economy, and corporate news' },
+            { name: 'Tech & AI', emoji: '🤖', desc: 'Startups, breakthroughs, and innovation' },
+            { name: 'Entertainment', emoji: '🎬', desc: 'Movies, music, and celebrity news' },
+            { name: 'Sports', emoji: '⚽', desc: 'Games, athletes, and competitions' },
+            { name: 'Science', emoji: '🔬', desc: 'Research, space, and discovery' },
+            { name: 'Health', emoji: '⚕️', desc: 'Medicine, wellness, and public health' },
+            { name: 'Climate & Environment', emoji: '🌱', desc: 'Sustainability and environmental issues' },
+            { name: 'Conflict & Crisis', emoji: '🚨', desc: 'Breaking emergencies and conflicts' }
+        ];
+
+        // ===== INITIALIZATION =====
+        function init() {
+            loadFromLocalStorage();
+            if (!state.selectedCategories.length) {
+                showSplash();
+            } else {
+                hideSplash();
+                showOnboarding();
+                initializeApp();
+            }
+        }
+
+        // ===== SCREEN MANAGEMENT =====
+        function showSplash() {
+            document.getElementById('splashScreen').classList.remove('hidden');
+        }
+
+        function hideSplash() {
+            document.getElementById('splashScreen').classList.add('hidden');
+        }
+
+        function startListening() {
+            hideSplash();
+            showOnboarding();
+        }
+
+        function showOnboarding() {
+            document.getElementById('onboardingScreen').classList.add('active');
+            renderCategories();
+        }
+
+        function hideOnboarding() {
+            document.getElementById('onboardingScreen').classList.remove('active');
+        }
+
+        function switchScreen(screen) {
+            document.querySelectorAll('.player-screen, .browse-screen, .saved-screen, .settings-screen').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            switch(screen) {
+                case 'player':
+                    document.getElementById('playerScreen').classList.add('active');
+                    document.querySelectorAll('.nav-item')[0].classList.add('active');
+                    break;
+                case 'browse':
+                    document.getElementById('browseScreen').classList.add('active');
+                    renderBrowse();
+                    document.querySelectorAll('.nav-item')[1].classList.add('active');
+                    break;
+                case 'saved':
+                    document.getElementById('savedScreen').classList.add('active');
+                    renderSaved();
+                    document.querySelectorAll('.nav-item')[2].classList.add('active');
+                    break;
+                case 'settings':
+                    document.getElementById('settingsScreen').classList.add('active');
+                    document.querySelectorAll('.nav-item')[3].classList.add('active');
+                    break;
+            }
+        }
+
+        // ===== ONBOARDING =====
+        function renderCategories() {
+            const grid = document.getElementById('categoriesGrid');
+            grid.innerHTML = categories.map((cat, idx) => `
+                <div class="category-card" id="cat-${idx}" onclick="toggleCategory(${idx})">
+                    <div class="checkmark">✓</div>
+                    <div class="category-emoji">${cat.emoji}</div>
+                    <div class="category-name">${cat.name}</div>
+                    <div class="category-desc">${cat.desc}</div>
+                </div>
+            `).join('');
+
+            state.selectedCategories.forEach(idx => {
+                document.getElementById(`cat-${idx}`).classList.add('selected');
+            });
+        }
+
+        function toggleCategory(idx) {
+            const index = state.selectedCategories.indexOf(idx);
+            if (index > -1) {
+                state.selectedCategories.splice(index, 1);
+            } else {
+                state.selectedCategories.push(idx);
+            }
+            document.getElementById(`cat-${idx}`).classList.toggle('selected');
+        }
+
+        function completeOnboarding() {
+            if (!state.selectedCategories.length) {
+                alert('Please select at least one category');
+                return;
+            }
+            hideOnboarding();
+            saveToLocalStorage();
+            initializeApp();
+        }
+
+        // ===== APP INITIALIZATION =====
+        function initializeApp() {
+            document.getElementById('playerScreen').classList.add('active');
+            fetchStories();
+            renderBrowse();
+            renderSettings();
+        }
+
+        // ===== NEWS FETCHING =====
+        async function fetchStories() {
+            try {
+                state.stories = generateMockStories();
+                state.filteredStories = [...state.stories];
+                renderQueue();
+                displayStory(0);
+            } catch (error) {
+                console.error('Error fetching stories:', error);
+                state.stories = generateMockStories();
+                renderQueue();
+                displayStory(0);
+            }
+        }
+
+        function generateMockStories() {
+            const sources = ['BBC', 'CNN', 'Reuters', 'Al Jazeera', 'Fox News', 'AP News', 'The Guardian'];
+            const headlines = [
+                'Major breakthrough in renewable energy technology announced',
+                'Global markets surge on positive economic indicators',
+                'New AI model shows promise in medical diagnosis',
+                'International summit addresses climate crisis',
+                'Tech giant launches innovative new product line',
+                'Sports championship reaches thrilling conclusion',
+                'Scientists discover potentially habitable exoplanet',
+                'Peace talks begin in troubled region',
+                'Entertainment industry celebrates award season',
+                'Healthcare system implements revolutionary changes',
+                'OpenAI announces GPT-5 with real-time reasoning',
+                'Bitcoin surges past previous resistance levels',
+                'NASA discovers ancient water evidence on Mars',
+                'Major political election results shift policy landscape',
+                'Quantum computing breakthrough achieved by research team'
+            ];
+
+            return headlines.map((headline, idx) => ({
+                id: idx,
+                headline,
+                source: sources[idx % sources.length],
+                category: categories[state.selectedCategories[idx % state.selectedCategories.length]].name,
+                categoryEmoji: categories[state.selectedCategories[idx % state.selectedCategories.length]].emoji,
+                summary: generateSummary(headline),
+                timestamp: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000),
+                isBreaking: Math.random() > 0.85,
+                url: 'https://example.com/news/' + idx,
+                image: null
+            }));
+        }
+
+        function generateSummary(headline) {
+            const summaries = {
+                'renewable energy': 'Scientists have successfully developed a new solar panel technology that increases energy capture efficiency by 40%. The breakthrough uses advanced materials and nanotechnology. Early testing shows promising results for wide-scale implementation. Industry experts predict this could revolutionize renewable energy infrastructure. The technology is expected to be commercially available within two years.',
+                'markets': 'Global financial markets experienced significant gains today as investors responded positively to strong economic data. Key indices rose across major exchanges. Analysts attribute the surge to improved employment figures and inflation trends. Consumer confidence reached a five-month high. Economists remain cautiously optimistic about economic growth.',
+                'AI': 'Researchers have unveiled a new artificial intelligence model with remarkable capabilities in medical diagnosis. The system achieved 95% accuracy in identifying diseases from medical imaging. Clinical trials are scheduled for the coming months. Healthcare professionals see potential to improve patient outcomes. The technology could significantly reduce diagnostic time and costs.',
+                'climate': 'World leaders gathered today to discuss urgent climate action measures. The summit produced new commitments to reduce carbon emissions. Nations pledged to invest in green technology and infrastructure. The agreement represents the most comprehensive climate deal in five years. Experts believe it could significantly impact global warming trends.',
+                'tech': 'A leading technology company unveiled several innovative products designed for consumer and enterprise markets. The new devices feature cutting-edge artificial intelligence capabilities. Early reviews from industry analysts have been highly positive. The company expects to see strong demand from both markets. Preorders begin next month with shipping in the fourth quarter.',
+                'sports': 'The championship game delivered an exciting conclusion with the home team emerging victorious. The contest featured dramatic moments and outstanding athletic performances. Fans celebrated the historic victory in the streets. The winning team improved their overall record significantly. Next season promises to be equally competitive based on current team rosters.',
+                'space': 'Astronomers have discovered an exoplanet located in a habitable zone within thirty light-years of Earth. The planet shows characteristics potentially suitable for life. Scientists plan to conduct further observations using advanced telescopes. This discovery adds to the growing list of potentially habitable worlds. The research was published in a leading scientific journal.',
+                'peace': 'Representatives from conflicting nations have begun peace negotiations after months of diplomatic preparation. International mediators are facilitating discussions on key issues. Both sides expressed commitment to finding peaceful solutions. Observers note positive signs for potential breakthrough agreements. The talks are scheduled to continue over the coming weeks.',
+                'entertainment': 'The entertainment industry celebrated award season with spectacular ceremonies and memorable moments. Leading actors, directors, and creators received recognition for outstanding work. The awards highlighted diversity and inclusion in modern entertainment. Record viewership numbers demonstrated continued public interest. Major studios announced new projects based on award-winning talent.',
+                'health': 'Healthcare authorities have implemented a comprehensive new system to improve patient care and outcomes. The system integrates advanced technology with personalized medicine approaches. Initial rollout shows promising results in multiple facilities. Medical professionals report increased efficiency and improved patient satisfaction. The initiative is expected to expand to additional healthcare providers.',
+                'OpenAI GPT-5': 'OpenAI has unveiled GPT-5, its latest artificial intelligence model featuring real-time reasoning capabilities. The model demonstrates significant improvements in logical thinking and problem-solving. Early access programs for researchers and enterprises begin next quarter. The technology promises to enhance productivity across multiple industries. GPT-5 represents a major step forward in artificial intelligence development.',
+                'Bitcoin': 'Bitcoin has surged past its previous resistance level amid growing institutional adoption. Market analysts cite positive regulatory developments and macroeconomic factors. Trading volumes reached record highs on major cryptocurrency exchanges. Financial advisors note increased mainstream acceptance of digital currencies. The cryptocurrency market continues to mature and attract institutional investors.',
+                'Mars': 'NASA scientists have discovered compelling evidence of ancient water on Mars, strengthening theories about past habitability. The evidence comes from analysis of rock formations and mineral deposits. This discovery could have implications for understanding planetary geology. Future missions are planned to conduct more detailed analysis. The findings support the ongoing search for signs of ancient microbial life.',
+                'politics': 'Recent election results have shifted the political landscape with significant implications for policy direction. Multiple key races produced surprising outcomes that analysts did not predict. Political parties are now reevaluating their strategies for upcoming elections. Public opinion polls show evolving attitudes on major issues. Policymakers are preparing for significant changes in legislative priorities.',
+                'quantum': 'A research team has achieved a breakthrough in quantum computing by successfully creating a stable quantum system. The development represents years of research and innovation by the team. Industry experts believe this could accelerate practical quantum computing applications. Technology companies are exploring how to integrate quantum systems into their platforms. The breakthrough brings quantum computing closer to mainstream use.'
+            };
+
+            for (let key in summaries) {
+                if (headline.toLowerCase().includes(key)) {
+                    return summaries[key];
+                }
+            }
+
+            return 'This is an important news story that affects global communities. The situation continues to develop as more information becomes available. Experts are analyzing the implications and expected outcomes. International response has been measured and cautious. Further updates will be provided as the situation unfolds.';
+        }
+
+        // ===== DISPLAY STORY =====
+        function displayStory(index) {
+            const story = state.stories[index];
+            if (!story) return;
+
+            document.getElementById('headline').textContent = story.headline;
+            document.getElementById('sourceBadge').textContent = story.source + ' • ' + formatTime(story.timestamp);
+            document.getElementById('categoryPill').textContent = story.categoryEmoji + ' ' + story.category;
+            document.getElementById('summaryText').textContent = story.summary;
+            document.getElementById('timestamp').textContent = formatTime(story.timestamp) + ' — ' + story.source;
+            document.getElementById('storyCounter').textContent = `Story ${index + 1} of ${state.stories.length}`;
+
+            state.currentStoryIndex = index;
+            renderQueue();
+            speakStory(story);
+        }
+
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            if (minutes < 1) return 'just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // ===== AUDIO PLAYBACK =====
+        function speakStory(story) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(story.headline + '. ' + story.summary);
+                utterance.rate = state.currentPlaybackRate;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+
+                utterance.onend = () => {
+                    nextStory();
+                };
+
+                window.speechSynthesis.speak(utterance);
+                state.isPlaying = true;
+                updatePlayButton();
+            }
+        }
+
+        function togglePlayPause() {
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.pause();
+                state.isPlaying = false;
+            } else {
+                window.speechSynthesis.resume();
+                state.isPlaying = true;
+            }
+            updatePlayButton();
+        }
+
+        function updatePlayButton() {
+            const btn = document.getElementById('playPauseBtn');
+            btn.textContent = state.isPlaying ? '⏸' : '▶';
+        }
+
+        function nextStory() {
+            if (state.currentStoryIndex < state.stories.length - 1) {
+                displayStory(state.currentStoryIndex + 1);
+            } else {
+                window.speechSynthesis.cancel();
+                state.isPlaying = false;
+                updatePlayButton();
+            }
+        }
+
+        function previousStory() {
+            if (state.currentStoryIndex > 0) {
+                displayStory(state.currentStoryIndex - 1);
+            }
+        }
+
+        function changeVoice() {
+            state.currentVoice = document.getElementById('voiceSelect').value;
+        }
+
+        function setSpeed(speed) {
+            state.currentPlaybackRate = speed;
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                speakStory(state.stories[state.currentStoryIndex]);
+            }
+        }
+
+        function toggleLoop() {
+            const toggle = document.getElementById('loopToggle');
+            toggle.classList.toggle('active');
+        }
+
+        function seekAudio(e) {
+            const percentage = e.offsetX / e.target.offsetWidth;
+            const fill = document.getElementById('progressFill');
+            fill.style.width = (percentage * 100) + '%';
+        }
+
+        // ===== SAVED STORIES =====
+        function saveCurrentStory() {
+            const story = state.stories[state.currentStoryIndex];
+            if (!state.savedStories.find(s => s.id === story.id)) {
+                state.savedStories.push(story);
+                saveToLocalStorage();
+                alert('Story saved!');
+            }
+        }
+
+        function renderSaved() {
+            const container = document.getElementById('savedStoriesContainer');
+            if (state.savedStories.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-emoji">⭐</div>
+                        <h2>Nothing saved yet.</h2>
+                        <p>Tap ⭐ on any story to save it here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = state.savedStories.map((story, idx) => renderStoryCard(story, idx)).join('');
+        }
+
+        function clearAllSaved() {
+            if (confirm('Clear all saved stories?')) {
+                state.savedStories = [];
+                saveToLocalStorage();
+                renderSaved();
+            }
+        }
+
+        // ===== BROWSE PAGE =====
+        function renderBrowse() {
+            renderCategoryFilter();
+            renderFeed();
+        }
+
+        function renderCategoryFilter() {
+            const filter = document.getElementById('categoryFilter');
+            const selectedCats = state.selectedCategories.map(idx => categories[idx]);
+            filter.innerHTML = selectedCats.map((cat, idx) => `
+                <div class="filter-tag active" onclick="filterByCategory(${idx})">${cat.emoji} ${cat.name}</div>
+            `).join('');
+        }
+
+        function filterByCategory(idx) {
+            // Simple filtering
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feedContainer');
+            container.innerHTML = state.stories.map((story, idx) => renderStoryCard(story, idx)).join('');
+        }
+
+        function renderStoryCard(story, idx) {
+            const isSaved = state.savedStories.find(s => s.id === story.id);
+            return `
+                <div class="story-card${story.isBreaking ? ' breaking' : ''}" onclick="displayStory(${state.stories.indexOf(story)})">
+                    <div class="story-header">
+                        <span class="story-source">${story.source}</span>
+                        <span class="story-time">${formatTime(story.timestamp)}</span>
+                        <span class="story-category">${story.categoryEmoji}</span>
+                    </div>
+                    <h3 class="story-headline">${story.headline}</h3>
+                    <p class="story-teaser">${story.summary.split('.')[0]}.</p>
+                    <div class="story-footer">
+                        <span class="story-duration">~45 sec read</span>
+                        <div class="story-actions">
+                            <button class="icon-button${isSaved ? ' saved' : ''}" onclick="toggleSaveStory(event, ${idx})" title="Save">⭐</button>
+                            <button class="icon-button" onclick="shareStory(event, ${idx})" title="Share">↗</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleSaveStory(e, idx) {
+            e.stopPropagation();
+            const story = state.stories[idx];
+            const found = state.savedStories.find(s => s.id === story.id);
+            if (found) {
+                state.savedStories = state.savedStories.filter(s => s.id !== story.id);
+            } else {
+                state.savedStories.push(story);
+            }
+            saveToLocalStorage();
+            renderFeed();
+        }
+
+        function shareStory(e, idx) {
+            e.stopPropagation();
+            const story = state.stories[idx];
+            const text = `"${story.headline}" - Heard on AudioNEWS`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'AudioNEWS',
+                    text: text,
+                    url: window.location.href
+                });
+            } else {
+                alert(text);
+            }
+        }
+
+        // ===== SETTINGS =====
+        function renderSettings() {
+            const sourceGrid = document.getElementById('sourceGrid');
+            const sources = ['BBC', 'CNN', 'Reuters', 'Al Jazeera', 'Fox News', 'AP News', 'The Guardian'];
+
+            sourceGrid.innerHTML = sources.map(source => `
+                <button class="source-toggle${state.selectedSources.includes(source) ? ' active' : ''}" onclick="toggleSource('${source}')">
+                    ✓ ${source}
+                </button>
+            `).join('');
+        }
+
+        function editCategories() {
+            showOnboarding();
+        }
+
+        function toggleSource(source) {
+            const idx = state.selectedSources.indexOf(source);
+            if (idx > -1) {
+                state.selectedSources.splice(idx, 1);
+            } else {
+                state.selectedSources.push(source);
+            }
+            saveToLocalStorage();
+            renderSettings();
+        }
+
+        function saveDefaultVoice() {
+            state.currentVoice = document.getElementById('settingsVoiceSelect').value;
+            saveToLocalStorage();
+        }
+
+        function saveDefaultSpeed() {
+            state.currentPlaybackRate = parseFloat(document.getElementById('settingsSpeedSelect').value);
+            saveToLocalStorage();
+        }
+
+        function toggleAlerts() {
+            state.breakingNewsAlerts = !state.breakingNewsAlerts;
+            saveToLocalStorage();
+        }
+
+        function toggleDarkMode() {
+            state.darkMode = !state.darkMode;
+            saveToLocalStorage();
+        }
+
+        // ===== QUEUE =====
+        function renderQueue() {
+            const queue = document.getElementById('queueList');
+            const upcoming = state.stories.slice(state.currentStoryIndex + 1, state.currentStoryIndex + 6);
+
+            queue.innerHTML = upcoming.map((story, idx) => `
+                <div class="queue-story${idx === 0 ? ' playing' : ''}" onclick="displayStory(${state.currentStoryIndex + 1 + idx})">
+                    <div class="queue-source">${story.source}</div>
+                    <div class="queue-headline">${story.headline}</div>
+                    <div class="queue-duration">~45 sec</div>
+                </div>
+            `).join('');
+        }
+
+        // ===== BREAKING NEWS =====
+        function checkForBreakingNews() {
+            const breaking = state.stories.find(s => s.isBreaking);
+            if (breaking && state.breakingNewsAlerts) {
+                showBreakingBanner(breaking.headline);
+            }
+        }
+
+        function showBreakingBanner(headline) {
+            const banner = document.getElementById('breakingBanner');
+            document.getElementById('breakingText').textContent = 'BREAKING: ' + headline.substring(0, 50) + '...';
+            banner.classList.add('show');
+
+            setTimeout(() => {
+                dismissBreaking();
+            }, 8000);
+        }
+
+        function dismissBreaking() {
+            document.getElementById('breakingBanner').classList.remove('show');
+        }
+
+        // ===== LOCAL STORAGE =====
+        function saveToLocalStorage() {
+            localStorage.setItem('audioNewsState', JSON.stringify({
+                selectedCategories: state.selectedCategories,
+                savedStories: state.savedStories,
+                selectedSources: state.selectedSources,
+                currentVoice: state.currentVoice,
+                currentPlaybackRate: state.currentPlaybackRate,
+                breakingNewsAlerts: state.breakingNewsAlerts,
+                darkMode: state.darkMode
+            }));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('audioNewsState');
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.selectedCategories = data.selectedCategories || [];
+                state.savedStories = data.savedStories || [];
+                state.selectedSources = data.selectedSources || ['BBC', 'CNN', 'Reuters'];
+                state.currentVoice = data.currentVoice || 'default';
+                state.currentPlaybackRate = data.currentPlaybackRate || 1;
+                state.breakingNewsAlerts = data.breakingNewsAlerts !== false;
+                state.darkMode = data.darkMode !== false;
+            }
+        }
+
+        // ===== INIT =====
+        init();
+
+        // Refresh stories every 15 minutes
+        setInterval(fetchStories, 15 * 60 * 1000);
+
+        // Check for breaking news every 30 seconds
+        setInterval(checkForBreakingNews, 30000);
+    </script>
+</body>
+</html>
